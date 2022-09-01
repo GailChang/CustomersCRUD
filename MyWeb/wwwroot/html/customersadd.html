@@ -1,0 +1,26 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>客戶資料新增作業</title>
+</head>
+<body>
+    <fieldset>
+        <legend>客戶資料維護</legend>
+        <form method="post" action="https://localhost:7294/api/Customers/customersadd/packing">
+            <div>客戶編號</div>
+            <input type="text" name="customerId" id="customerId"/>
+            <div>公司行號</div>
+            <input type="text" name="companyName"/>
+            <div>聯絡地址</div>
+            <input type="text" name="address"/>
+            <div>連絡電話</div>
+            <input type="text" name="phone"/>
+            <div>國家別</div>
+            <input type="text" name="country"/>
+            <br/>
+            <input type="submit" value="新增"/>
+        </form>
+    </fieldset>
+</body>
+</html>

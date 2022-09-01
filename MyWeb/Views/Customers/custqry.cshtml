@@ -1,0 +1,271 @@
+﻿
+@{
+    ViewData["Title"] = "客戶查詢-by國家別";
+    //取出狀態 國家別清單List物件
+    List<String> items = ViewBag.Data as List<String>;
+    //進行序列化集合物件為 JsonArray
+    String jsonArray=Newtonsoft.Json.JsonConvert.SerializeObject(items);
+}
+@*產生崁入式JavaScript 將集合物件轉換成JS陣列 *@
+<script>
+    //定義一個Global變數
+    var cities = @Html.Raw(jsonArray);
+    //更新客戶服務位址
+    var qryService='@Html.Raw(ViewBag.QryByCountry as String)';
+    var updateService = '@Html.Raw(ViewBag.Update as String)';
+    var deleteService = '@Html.Raw(ViewBag.Delete as String)'; 
+    //表格 Highlight 相對列順序
+    var rowIndex=-1;
+</script>
+
+@*刻前端版面*@
+<fieldset id="panel">
+    <legend>客戶資料查詢</legend>
+    <div>國家別</div>
+    <select v-model="selectedItem">
+        <option v-for="item in items" v-bind:value="item">{{item}}</option>
+    </select>
+    <button v-on:click="countryQryHandler">查詢</button>
+    <div>您挑選的國家別:{{selectedItem}}</div>
+   @*查詢結果客戶清單*@
+   <fieldset v-show="isShow">
+        <legend>客戶資料</legend>
+        <table class="table table-light table-hover" id="tbGrid">
+            <thead class="table-primary">
+                <tr>
+                    <td>操作</td>
+                    <td>客戶編號</td>
+                    <td>公司行號</td>
+                    <td>聯絡地址</td>
+                    <td>聯絡電話</td>
+                    <td>國家別</td>
+                </tr>
+            </thead>
+            <tbody>
+                 <tr v-for="(cust,index) in customers">
+                    <td><button v-bind:accessKey="index" v-on:click="buttonEditHandler($event)" class="btn btn-outline-primary">修改</button>
+                    <button v-bind:accessKey="index" v-on:click="deleteHandler" class="btn btn-outline-danger">刪除</button></td>
+                    <td>{{cust.customerId}}</td>
+                    <td>{{cust.companyName}}</td>
+                    <td>{{cust.address}}</td>
+                    <td>{{cust.phone}}</td>
+                    <td>{{cust.country}}</td>
+                </tr>
+            </tbody>
+        </table>
+   </fieldset>
+
+   @*單筆編輯畫面*@
+   <fieldset v-show="isEditDialog" id="editDialog">
+    <table>
+        <tr>
+            <td>客戶編號</td>
+            <td><input type="text" v-model="curCustomers.customerId" readonly/></td>
+        </tr> <tr>
+            <td>公司行號</td>
+            <td><input type="text" v-model.lazy="curCustomers.companyName"/></td>
+        </tr>
+         <tr>
+            <td>聯絡地址</td>
+            <td><input type="text" v-model.lazy="curCustomers.address"/></td>
+        </tr>
+         <tr>
+            <td>連絡電話</td>
+            <td><input type="text" v-model.lazy="curCustomers.phone"/></td>
+        </tr>
+         <tr>
+            <td>國家別</td>
+            <td><input type="text" v-model.lazy="curCustomers.country"/></td>
+        </tr>
+    </table>
+    <div>{{message}}</div>
+   </fieldset>
+   @* 刪除對話盒 *@
+   <fieldset id="deleteDialog" v-show="isDelete">
+    <div class="text-danger" style="font-size: 24px;">是否確定刪除:{{curCustomers.customerId}} 客戶資料?</div>
+   </fieldset>
+</fieldset>
+@*建構一個Vue Instance個體物件 同時進行掛載*@
+<script>
+    //進行Vue物件初始化設定 採用JavaScript物件
+    var app=new Vue(
+        //進行初始化設定
+        {
+            //資料模組
+            data:{
+                items:[],
+                selectedItem:'', //Handler下拉式功能表挑選國家別
+                qryByCountryService:'',
+                custUpdateService:'',
+                custDeleteService:'',
+                customers:[], //後端查詢客戶結果
+                isShow:false,
+                isEditDialog:false,
+                isDelete:false,
+                curCustomers:{}, //相對客戶物件
+                message:''
+            },
+            //事件程序綁定 或者功能呼叫
+            methods:{
+                //聆聽查詢按鈕引發事件程序
+                countryQryHandler:function(){
+                    //置換成path為相對國家別內容
+                    let urlString=this.qryByCountryService.replace('{0}',this.selectedItem);
+                    console.log(urlString); 
+                    //TODO 進行非同步呼喚後端 RESTful 服務 進行相對國家別客戶查詢
+                    //採用AJAX方式進行 axios framework
+                    axios.get(urlString)
+                    //後端處理成功 Http status 2xx callback
+                    .then(res => {
+                    console.log(res);
+                    //取出查詢回傳的資料
+                    this.customers=res.data; //查詢回來的資料指派給前端Vue資料模組
+                    //呈現渲染資料區塊
+                    this.isShow=true;
+                    //reset 
+                    if(rowIndex>-1){
+                         $('#tbGrid tbody tr').eq(rowIndex).removeClass('table-danger');
+                         rowIndex=-1;
+                    }
+                    })
+                    //後端回應Http status 4xx or 5xx
+                    .catch(res => {
+                    console.log(res);
+                    });
+                },
+                //呼喚後端服務進行相對客戶刪除作業
+                custDeleteHandler:function(){
+                    //呼喚axios delete method
+                    axios.delete(this.custDeleteService,{
+                        params:{
+                            customerId:this.curCustomers.customerId
+                        }
+                    })
+                    .then(res => {
+                        console.log(res)
+                        //UI同步更新
+                        //透過相對物件 問去在陣列位址順序
+                        let indexer=this.customers.indexOf(this.curCustomers);
+                        //陣列執行splice給於相對順序移除數量
+                        this.customers.splice(indexer,1);
+                    })
+                    .catch(err => {
+                        console.error(err); 
+                    })
+                },
+                //e-eventdata 事件發生點 所有資訊傳進來
+                buttonEditHandler:function(e){
+                    console.log(e);
+                    //取出按鈕對應資料相對順序
+                    let indexer=e.target.accessKey;
+                    //透過陣列資料模組對應相對紀錄
+                    this.curCustomers=this.customers[indexer];
+                    console.log(this.curCustomers);
+                    //TODO 渲染編輯資料對話盒
+                    //使用jquery selector挑選id 呈現為對話盒
+                    $('#tbGrid tbody tr').eq(indexer).addClass('table-danger');
+
+                    //之前要移除 與重新設定
+                    if(rowIndex>-1){
+                         $('#tbGrid tbody tr').eq(rowIndex).removeClass('table-danger');
+                    }
+                    rowIndex=indexer;
+
+                    $('#editDialog').dialog(
+                        //JavaScript物件進行設定
+                        {
+                            title:'客戶資料維護',
+                            width:400,
+                            heigth:500,
+                            //Modal對話盒 強佔式
+                            modal:true,
+                            buttons:[
+                                {
+                                    text:'取消',
+                                    click:function(){
+                                        //關閉對話盒
+                                        $(this).dialog('close');
+                                    },
+                                    class:'btn-primary'
+                                },
+                                {
+                                    text:'更新',
+                                    click:function(){
+                                        //TODO 非同步呼喚後端服務
+                                        //呼叫Vue物件(app)的方法 不能使用 this
+                                        app.updateCustomersHandler();
+                                    },
+                                    class:'btn-danger'
+                                }
+                            ]
+                           
+                        }
+                    );
+                },
+                //非同步更新後端資料 前端對話更新按鈕引發事件程序
+                updateCustomersHandler:function(){
+                    axios(
+                    {
+                        method:'PUT',
+                        url:this.custUpdateService,
+                        headers:{"Content-Type":"Application/json"},
+                        data: this.curCustomers
+                    }
+                    ).then(res =>{
+                        console.log(res);
+                        this.message= res.data.msg;
+                    })
+                    .catch(err =>{
+                        console.log(err);
+                        this.message = err.response.data.msg;
+                    });
+                },
+                //刪除
+                deleteHandler:function(e){
+                    //取出相對順序編號 對應相對物件
+                    this.curCustomers = this.customers[e.target.accessKey];
+                    //
+                    $('#deleteDialog').dialog(
+                        {
+                            title: '客戶資料刪除',
+                            width: 400,
+                            heigth: 300,
+                            modal: true,
+                            buttons:[
+                                {
+                                    text:'刪除',
+                                    click:function(){
+                                        //指向Vue物件method進行非同步處理
+                                        app.custDeleteHandler();
+                                        $('#deleteDialog').dialog('close');
+                                    },
+                                    class: 'btn-danger'
+                                },
+                                {
+                                    text: '取消',
+                                    click:function(){
+                                        $('#deleteDialog').dialog('close');
+                                    },
+                                    class: 'btn-primary'
+                                }
+                            ]
+                        }
+                    )
+                },                
+            },
+            //掛載完成引發的事件
+            mounted:function(){
+                //將global變數國家別陣列指派給 Vue資料模組
+                this.items=cities;
+                this.qryByCountryService=qryService;
+                //綁定服務位址給Vue Data Model
+                this.custUpdateService = updateService;
+                this.custDeleteService = deleteService;
+            }
+        }
+    );
+
+    //掛載特定的區域DOM(Document Object Model)
+    app.$mount('#panel');
+</script>
+

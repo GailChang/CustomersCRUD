@@ -1,0 +1,55 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>客戶查詢 -by 客戶編號</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <!-- 練習一下JS物件建立 -->
+    <script>
+        //建構JS物件
+        var customers = {
+            id: 1,
+            name: '張三豐',
+            address: '台北市',
+            phone: '02-12345678',
+            //功能
+            information: function () {
+                return '編號: ' + this.id + ' 姓名: ' + this.name;
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="qry">
+        <div>客戶編號</div>
+        <input type="text" v-model.lazy="customerid"/>
+        <button id="btnSearch" v-on:click="customersSearch">查詢</button>
+        <div>您輸入的客戶編號:{{customerid}}</div>
+    </div>
+
+    <!-- 建構一個 Vue Instance 個體物件 掛載在指定DOM上 -->
+    <script>
+        // 建構 Vuew 物件
+        var app = new Vue(
+            // 建構物件初始化使用JS物件
+            {
+                // 資料模組屬性
+                data:{
+                    customerid: '', //客戶編號
+                    message: 'hello world'
+                },
+                // 設定功能或者事件程序
+                methods:{
+                    customersSearch:function(){
+                        console.log('我來了');
+                        // TODO 呼喚後端服務 進行非同步處理 查詢客戶
+                        
+                    }
+                }
+            }
+        );
+        // 掛載指定 id tag selector 挑標籤 id 一般使用#
+        app.$mount('#qry');
+    </script>
+</body>
+</html>

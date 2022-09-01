@@ -1,0 +1,91 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>客戶查詢 -by 客戶編號</title>
+    <script>
+        // 事件程序初始化 網頁下載初始化
+        function init() {
+                //alert('我來了 JS');
+                // 使用文件整個網頁當作物件 Document 類型
+                // var function 裡面的區域變數 取出 DOM 標籤物件
+            var customerid = document.getElementById('customerId');
+            // 參照按鈕標籤物件 綁定 click 事件
+            document.getElementById('btnSearch').addEventListener(
+                "click",
+                //事件程序
+                function () {
+                    //取出輸入客戶編號
+                    var cid = customerid.value;
+                    //非同步處理 ajax
+                    //1.建構 xmlhttpRequest 物件
+                    var xhr = new XMLHttpRequest();
+                    //2.採用傳送方式配合遠端服務
+                    var serviceURL = 'https://localhost:7294/api/Customers/qrybyid/rawdata?cid='+cid;
+                    //開始交代 非同步處理過程 要及時回報給這一個事件程序
+                    xhr.onreadystatechange=function(e){
+                        //問ready 準備狀態 與Http status是否200
+                        console.log('state: '+xhr.readyState);
+                        console.log('status: '+ xhr.status);
+                        //判斷4-done 成功了回呼 http status 200
+                        if (xhr.readyState==4 && xhr.status==200)
+                        {   // 取回呼帶回的資料
+                            var jsonString = xhr.responseText;
+                            // 反序列成JSON文件
+                            var jsonObject = JSON.parse(jsonString);
+                            console.log(jsonObject);
+                            //腳本 裹腳布
+                            document.getElementById('cid').innerText = jsonObject.customerId;
+                            document.getElementById('companyName').innerText = jsonObject.companyName;
+                            document.getElementById('address').innerText = jsonObject.address;
+                            document.getElementById('phone').innerText = jsonObject.phone;
+                            document.getElementById('country').innerText = jsonObject.country;
+                            //呈現畫面
+                            document.getElementById('result').style = "display:inline-block;";
+                        }
+                        else if (xhr.readyState == 4 && xhr.status == 204){
+                            console.log('查無資料');
+                            document.getElementById('result').style = "display:none;";
+                            alert('查無客戶: '+customerid.value+' 資料!!!');
+                        }
+                    }
+                    xhr.open('GET', serviceURL, true);     // true採用ajax
+                    xhr.send(); //正式提出請求
+                }
+            )
+        }
+    </script>
+</head>
+<body onload="init()">
+    <div>
+        <div>客戶編號</div>
+        <input type="text" id="customerId"/>
+        <button id="btnSearch">查詢</button>
+    </div>
+    <fieldset style="display: none;" id="result">
+        <legend>客戶資料</legend>
+        <table>
+            <tr>
+                <td>客戶編號:</td>
+                <td id="cid"></td>
+            </tr>
+            <tr>
+                <td>公司行號:</td>
+                <td id="companyName"></td>
+            </tr>
+            <tr>
+                <td>聯絡地址:</td>
+                <td id="address"></td>
+            </tr>
+            <tr>
+                <td>連絡電話:</td>
+                <td id="phone"></td>
+            </tr>
+            <tr>
+                <td>國家別:</td>
+                <td id="country"></td>
+            </tr>
+        </table>
+    </fieldset>
+</body>
+</html>

@@ -1,0 +1,118 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Vue渲染技術</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <script>
+        // 定義陣列[] 多個客戶資料
+        var customers=[
+            {
+                id: '0001',
+                name: '張三豐',
+                address: '武當山',
+                phone: '1234567890'
+            },
+            {
+                id: '0002',
+                name: '張翠山',
+                address: '武當山',
+                phone: '1234567890'
+            },
+            {
+                id: '0003',
+                name: '張無忌',
+                address: '武當山',
+                phone: '1234567890'
+            },
+            {
+                id: '0004',
+                name: '張泰山',
+                address: '台北市',
+                phone: '1234567890'
+            }
+        ];
+    </script>
+</head>
+<body>
+    <fieldset id="result">
+        <legend>客戶清單</legend>
+        <table id="tbCustomers">
+            <thead>
+                <tr>
+                    <td>選取</td>
+                    <td>順序</td>
+                    <td>客戶編號</td>
+                    <td>姓名</td>
+                    <td>聯絡地址</td>
+                    <td>聯絡電話</td>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="(item, index) in customerList" v-bind:id="index">
+                    <td><button v-bind:accesskey="index" v-on:click="selected($event)">選取</button></td>
+                    <td>{{index+1}}</td>
+                    <td>{{item.id}}</td>
+                    <td>{{item.name}}</td>
+                    <td>{{item.address}}</td>
+                    <td>{{item.phone}}</td>
+                </tr>
+            </tbody>
+        </table>
+        <div>張家幾口: {{customerList.length}}口人</div>
+        <!-- 動態呈現相對資料 -->
+        <fieldset v-show="isShow">
+            <legend>客戶詳細資料</legend>
+            <table>
+                <tr>
+                    <td>客戶編號</td>
+                    <td>{{curCustomers.id}}</td>
+                </tr>
+                <tr>
+                    <td>姓名</td>
+                    <td>{{curCustomers.name}}</td>
+                </tr>
+                <tr>
+                    <td>聯絡地址</td>
+                    <td>{{curCustomers.address}}</td>
+                </tr>
+                <tr>
+                    <td>聯絡電話</td>
+                    <td>{{curCustomers.phone}}</td>
+                </tr>
+            </table>
+        </fieldset>
+    </fieldset>
+    <!-- 建構一個 Vue Instance -->
+    <script>
+        //Vue個體物件
+        var app = new Vue(
+            //設定一個JS物件
+            {
+                data:{
+                    customerList:customers,
+                    curCustomers:{},  //選取
+                    isShow:false
+                },
+                //事件程序或者功能
+                methods:{
+                    // e參數: EventSource 發生事件的那一個傳遞進來
+                    selected:function(e){
+                        this.isShow = true;
+                        console.log(e);
+                        //1.透過傳遞進來的事件來源取出 target (就是按鈕)
+                        var curButton = e.target;   //取出按下的那一個按鈕
+                        //取出 accesskey 屬性內容(客戶順序)
+                        var indexer = curButton.accessKey;
+                        //從Vue資料模組取出相對物件 指派給 Vue 物件模組
+                        this.curCustomers = this.customerList[indexer];
+                        console.log(this.curCustomers);                       
+                    }
+                }
+            }
+        );
+        //掛載
+        app.$mount('#result');
+    </script>
+</body>
+</html>
