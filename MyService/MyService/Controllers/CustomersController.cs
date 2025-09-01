@@ -8,23 +8,22 @@ namespace MyService.Controllers
     [ApiController]
     public class CustomersController : ControllerBase
     {
-        // Data Field
-        private Models.NorthwindDB _northwindDB;
-        //自訂建構子 注入依賴的 DbContext 物件
+        //注入依賴的 DbContext 物件
+        private NorthwindDB _northwindDB;
         public CustomersController(Models.NorthwindDB _northwindD)
         {
             this._northwindDB = _northwindD;
             Console.WriteLine(this._northwindDB);
         }
-       
 
-        //產生一個客戶物件 回應到前端
-        [HttpGetAttribute()]
-        [RouteAttribute("getcustomers")]  //序列化 物件時json 屬性採用 camel命名法
-        [ProducesAttribute("application/json")] //Response Content-Type
+
+        //[GET]產生一個客戶物件 回應到前端
+        [HttpGet]
+        [Route("getcustomers")]
+        [Produces("application/json")]
         public Models.Customers getCustomers()
         {
-            //建構客戶物件 直接回應物件 經由Middleware進行序列化
+            //物件初始化
             return new Models.Customers()
             {
                 CustomerId="0001",
@@ -32,22 +31,21 @@ namespace MyService.Controllers
                 Address="台北市公園路",
                 Phone="02-12345678",
                 Country="中華民國"
-            }; //物件初始化 
+            };
         }
 
         //採用QueryString 傳遞客戶編號進來 .找出相對客戶資料
         //https://hosted/xxx/xxx?paramName=parmaValue
-        [HttpGetAttribute]
-        [RouteAttribute("qrybyid/rawdata")] //rawdata 回應是JSON or XML
-        public IActionResult customersQryById([FromQueryAttribute(Name ="cid")]String customerId)
+        [HttpGet]
+        [Route("qrybyid/rawdata")]
+        public IActionResult customersQryById([FromQuery(Name ="cid")]String customerId)
         {
-            // 進行相對客戶編號資料查詢
-            // 1. 採用 LINQ 配合 DbContext (LINQ TO Entity Framework)
+            // 1. LINQ TO Entity Framework
             var result = from c in _northwindDB.Customers
                          where c.CustomerId == customerId
-                         select c;   // 屬於延遲查詢 Lazy query
-            // 準備撈資料 可能有一筆 可能沒有(這時候才正式對資料庫進行查詢)
-            Models.Customers customers = result.FirstOrDefault<Models.Customers>();
+                         select c;
+            // 檢查資料是否存在 撈資料
+            Customers customers = result.FirstOrDefault<Customers>();
             if(customers == null)
             {
                 // 建構訊息物件
@@ -56,51 +54,53 @@ namespace MyService.Controllers
                     code = 400,
                     msg = $"{customerId} 查無客戶資料"
                 };
+                //Bad Request
                 return this.StatusCode(400, msg);
             }   
             else
             {
+                //200 Ok
                 return this.Ok(customers);
             }
 
         }
 
         //傳遞國家別 採用Path當作參數方式 進行查詢 
-        [HttpGetAttribute()]
-        [RouteAttribute("qrybycountry/{coun}/rawdata")]
-        public List<Models.Customers> customersQryByCountry([FromRouteAttribute(Name ="coun")]String country)
+        [HttpGet]
+        [Route("qrybycountry/{coun}/rawdata")]
+        public List<Customers> customersQryByCountry([FromRoute(Name ="coun")]String country)
         {
             // 採用 LINQ To Entity 進行多筆查詢
             var result =(from c in _northwindDB.Customers
                         where c.Country == country
-                        select c).ToList<Models.Customers>();
+                        select c).ToList<Customers>();
 
             return result;
         }
 
-        //接受前端表單頁面後送postback (類似新增作業) 暈倒表單(輸入到暈倒的意思)
-        [HttpPostAttribute]
-        [RouteAttribute("customersadd")]
-        public String customersAdd([FromFormAttribute] String customerId, [FromFormAttribute] String companyName, [FromFormAttribute] String address, [FromFormAttribute] String phone, [FromFormAttribute] String country)
+        //接受前端表單頁面後 進行新增作業
+        [HttpPost]
+        [Route("customersadd")]
+        public String customersAdd([FromForm] String customerId, [FromForm] String companyName, [FromForm] String address, [FromForm] String phone, [FromForm] String country)
         {
             return companyName;
         }
 
 
         //接受前端表單頁面後送postback (類似新增作業) 整包傳遞近來(JSON文件)
-        [HttpPostAttribute]
-        [RouteAttribute("customersadd/packing")]
-        public String customersAdd2([FromFormAttribute] Customers customers)
+        [HttpPost]
+        [Route("customersadd/packing")]
+        public String customersAdd2([FromForm] Customers customers)
         {
             customers.CompanyName = "Tibame";
             return customers.CompanyName;
         }
 
         //接受前端傳送Json文件進來，進行反序列化成物件 
-        [HttpPostAttribute]
-        [RouteAttribute("customeradd/rawdata")]
-        [ConsumesAttribute("application/json")] //明確前端請求Request Header-application/json content-type
-        public Models.Message customersAdd3([FromBodyAttribute] Customers customers)
+        [HttpPost]
+        [Route("customeradd/rawdata")]
+        [Consumes("application/json")] //明確前端請求Request Header-application/json content-type
+        public Models.Message customersAdd3([FromBody] Customers customers)
         {
             //定義一個訊息物件
             Message msg = new Message();
